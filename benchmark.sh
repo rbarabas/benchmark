@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
 
-THREADS="1 2 4 8 16 32 64"
-NTABLES=100
-NROWS=5000000 
-DB_TYPE=pgsql
-DB_USER=sbtest
-DB_PASS=sbtest
-DB_NAME=sbtest
-DURATION_SECONDS=600
-REPORTING_SECONDS=1
-TEST_TYPE=/usr/share/sysbench/oltp_read_write.lua
+source "$(dirname $0)/settings.sh"
+source $(dirname $0)/common.sh
 
 function initdb() {
   sysbench  --db-driver=${DB_TYPE} \
@@ -29,7 +21,7 @@ function initdb() {
 function benchmarkdb() {
   for T in $THREADS; do
     # Setup FD to capture output
-    exec 3>${TARGET_DIR}/threads_${T}.out
+    exec 3>${TARGET_DIR}/threads_${T}.data
     exec 1>&3
     exec 2>&3
   
@@ -55,7 +47,7 @@ function benchmarkdb() {
 }
 
 function cleandb() {
-  echo sysbench  --db-driver=${DB_TYPE} \
+  sysbench  --db-driver=${DB_TYPE} \
             --table-size=${NROWS} \
             --tables=${NTABLES} \
             --threads=${T}  \
@@ -72,13 +64,6 @@ function cleandb() {
 function help() {
   echo "$0 -c init|run|clean -h HOST [-p PORT] [-d LOGDIR]"
   exit 1
-}
-
-function error() {
-  ret=$1
-  shift
-  echo $*
-  exit $ret
 }
 
 while getopts "c:h:p:d:" opt; do
